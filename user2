@@ -1,78 +1,60 @@
-- name: user server
+- name: user
   hosts: user
   become: yes
   tasks:
-  - name: delete old and install new nodejs
+  - name: disable old nodejs
     ansible.builtin.shell: dnf module disable nodejs -y ; dnf module enable nodejs:18 -y
-
   - name: install nodejs
     ansible.builtin.package:
       name: nodejs
       state: present
-
   - name: add user
     ansible.builtin.user:
-      name: roboshop  
-
-  - name: Recursively remove directory
+      name: roboshop
+  - name: remove directory
     ansible.builtin.file:
       path: /app
       state: absent
-
-  - name: Create a directory for app
+  - name: create directory
     ansible.builtin.file:
       path: /app
       state: directory
-
-  - name: Copy file with owner and permissions
+  - name: download application
     ansible.builtin.get_url:
       url: https://roboshop-builds.s3.amazonaws.com/user.zip
-      dest: /tmp/user.zip 
-
-  - name: unzip
+      dest: /tmp
+  - name: unzip app
     ansible.builtin.unarchive:
       src: /tmp/user.zip
       dest: /app
       remote_src: yes
-
-  - name: install dependencies
+  - name: download dependencies
     ansible.builtin.command: npm install
     args:
       chdir: /app
-
-  - name: Copy user service
+  - name: setup user service
     ansible.builtin.copy:
       src: user.service
       dest: /etc/systemd/system/user.service
-
-  - name: Daemon Reload and start
+  - name: deamon realod and start
     ansible.builtin.systemd_service:
       daemon_reload: true
-
-  - name: copying mongodb repo
+  - name: install mongodb client
     ansible.builtin.copy:
-      src: mongo.repo
+      src: mongodb.repo
       dest: /etc/yum.repos.d/mongo.repo
-
   - name: install mongodb
     ansible.builtin.package:
-      name: mongodb-org
-      state: present  
-
-  - name: get the user count
-    ansible.builtin.command: mongo --host mongodb.littlesimba.online --quiet --eval 'db = db. getSiblingDB("users"); db.users.count()'
+      name: mongodb-org-shell
+      state: present
+  - name: get the users count
+    ansible.builtin.shell:  mongo --host mongodb.littlesimba.online --quiet --eval 'db = db.getSiblingDB("users"); db.users.count()'
     register: user_count
-
-  # - name: print the count
-  #   ansible.builtin.debug:
-  #     msg: "users count: {{user_count}}"
-
-  - name: load user data
-    ansible.builtin.command: mongo --host mongodb.littlesimba.online < /app/schema/user.js
-    when: user_count.stdout == "0"
-
-  - name: start and enable user
+  - name: load schema
+    ansible.builtin.command: mongo --host mongodb.littlesimba.online </app/schema/user.js
+    #when: user_count.stdout == "0"
+  - name: enable and start user
     ansible.builtin.service:
       name: user
-      state: restarted 
+      state: restarted
       enabled: yes
