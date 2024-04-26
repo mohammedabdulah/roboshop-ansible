@@ -50,6 +50,9 @@
   - name: get the users count
     ansible.builtin.shell:  mongo --host mongodb.littlesimba.online --quiet --eval 'db = db.getSiblingDB("users"); db.users.count()'
     register: user_count
+  - name: print users number
+    ansible.builtin.debug:
+      msg: "users count = {{user_count}}"
   - name: load schema
     ansible.builtin.command: mongo --host mongodb.littlesimba.online </app/schema/user.js
     when: user_count.stdout == "0"
