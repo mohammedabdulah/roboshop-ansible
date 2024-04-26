@@ -47,9 +47,12 @@
     ansible.builtin.package:
       name: mongodb-org-shell
       state: present
+  - name: get the users count
+    ansible.builtin.command:  mongo --host mongodb.daws76s.online --quiet --eval 'db = db.getSiblingDB("users"); db.users.count()'
+    register: user_count
   - name: load schema
     ansible.builtin.command: mongo --host mongodb.littlesimba.online </app/schema/user.js
-    #when: user_count.stdout == "0"
+    when: user_count.stdout == "0"
   - name: enable and start user
     ansible.builtin.service:
       name: user
