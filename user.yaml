@@ -52,7 +52,7 @@
     register: user_count
   - name: load schema
     ansible.builtin.command: mongo --host mongodb.littlesimba.online </app/schema/user.js
-    when: user_count.stdout == "0"
+    #when: user_count.stdout == "0"
   - name: enable and start user
     ansible.builtin.service:
       name: user
